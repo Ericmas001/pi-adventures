@@ -19,6 +19,7 @@ class Console:
     @staticmethod
     def WriteLine(str, *args):
         print str.format(*args)    
+        sys.stdout.flush()
         
 def take_simple_picture(camera, filename):
     Console.Write("Taking simple picture ... ") 
@@ -61,7 +62,7 @@ def take_picture(camera, nb_ss, filename):
     camera.capture("/Pictures/tests/{0}_d_{1:04d}.jpg".format(filename, nb_ss))
     Console.WriteLine("ok")
     
-def brightness1( im_file ):
+def brightness( im_file ):
    im = Image.open(im_file).convert('L')
    stat = ImageStat.Stat(im)
    return stat.mean[0]
@@ -80,12 +81,13 @@ def take_picture_stream(camera, nb_ss, filename):
     Console.Write("ss={0}, awb={1} ... ",camera.shutter_speed,camera.awb_gains)
     camera.capture(my_stream, 'jpeg')
     my_stream.seek(0)
+    Console.WriteLine("ok")
     return my_stream
     
 def take_best_picture(camera, filename):
     Console.WriteLine("Taking the best possible picture !!!") 
-    min = 60
-    max = 80
+    min = 80
+    max = 85
     ss = 1;
     bright = 0.1;
     bestbright = 0;
@@ -95,8 +97,8 @@ def take_best_picture(camera, filename):
         count+=1
         try:
             my_stream = take_picture_stream(camera, int(ss), filename)
-            bright = brightness1(my_stream)
-            Console.WriteLine(" brighness={0} ... ok", bright)
+            bright = brightness(my_stream)
+            Console.WriteLine("Brighness={0}", bright)
             short = 0
             if (bestbright < min):
                 short = min - bestbright
@@ -135,28 +137,100 @@ def take_best_picture(camera, filename):
     Console.Write("Accepted brighness={0} ... let's write ... ", bestbright)
     open("/Pictures/tests/{0}_f_{1:04d}.jpg".format(filename, int(ss)), 'wb').write(beststream.read())
     Console.WriteLine("ok")
-""" 
-def take_picture( camera, nb_ss, filename ):
-   startprint( "Taking setting {0} ... ".format(nb_ss))
-   camera.resolution = (2592, 1944)
-   camera.iso = 100
-   sleep(2)
-   camera.shutter_speed = camera.exposure_speed
-   camera.exposure_mode = 'off'
-   g = camera.awb_gains
-   camera.awb_mode = 'off'
-   camera.awb_gains = g
-   sleep(10)
-#   camera.capture_sequence(['image%02d.jpg' % i for i in range(10)])
-   camera.capture_sequence(["/Pictures/tests/{1}_{0:03d}.jpg".format(i, filename) for i in range(10)])
-
-#   nopreview = "-n" # -n, --nopreview : Do not display a preview window
-#   shutter = "-ss {0}00000".format(nb_ss) # -ss, --shutter  : Set shutter speed in microseconds
-#   quality = "-q 100" # -q, --quality   : Set jpeg quality <0 to 100>
-#   output = "-o /Pictures/Flowers/{1}_{0:03d}.jpg".format(nb_ss, filename) # -o, --output    : Output filename <filename> (to write to stdout, use '-o -'). If not specified, no file is saved
-#   subprocess.call("raspistill {0} {1} {2} {3}".format(nopreview, shutter, quality, output), shell=True)
-   print "ok"
-"""
+    
+def take_best_of_the_best_picture(camera, filename):
+    Console.WriteLine("Taking the best of the best possible picture !!!") 
+    
+    ideal_brightness = 84
+    max_try = 20
+    accepted_delta = 2
+    
+    ss = 2
+    count = 0
+    delta = 9999.0
+    closest_too_much_under_ss = 1
+    closest_too_much_under_br = 0
+    closest_too_much_under_dt = -1.0
+    closest_too_much_over_ss = 1000
+    closest_too_much_over_br = 9999
+    closest_too_much_over_dt = -1.0
+    closest_image = io.BytesIO()
+    closest_delta = 9999.0
+    
+    while(ss > 0 and ss < 1001 and count < max_try and delta > accepted_delta):
+        count += 1
+        try:
+            current_stream = take_picture_stream(camera, int(ss), filename)
+            current_brightness = brightness1(current_stream)
+            delta = abs(ideal_brightness - current_brightness)
+            Console.WriteLine("br={0} delta={1} accepted={2}", current_brightness, delta, accepted_delta)
+            if(delta < accepted_delta):
+                closest_image = current_stream
+                closest_delta = delta
+                Console.WriteLine("DEBUG: OK")
+                break
+                
+            if(ss == 1000):
+                Console.WriteLine("DEBUG: EXPLODE")
+                break
+                
+            if(current_brightness < ideal_brightness):
+                Console.WriteLine("DEBUG: LESS")
+                if(closest_too_much_under_br < 0 or current_brightness > closest_too_much_under_br):
+                    Console.WriteLine("DEBUG: CLOSE LESS")
+                    closest_too_much_under_br = current_brightness
+                    closest_too_much_under_ss = ss
+                    closest_too_much_under_dt = delta
+                
+            if(current_brightness > ideal_brightness):
+                Console.WriteLine("DEBUG: MORE")
+                if(closest_too_much_over_br < 0 or current_brightness < closest_too_much_over_br):
+                    Console.WriteLine("DEBUG: CLOSE MORE")
+                    closest_too_much_over_br = current_brightness
+                    closest_too_much_over_ss = ss
+                    closest_too_much_over_dt = delta
+                    
+            if(closest_too_much_over_dt < 0):
+                Console.WriteLine("DEBUG: WATCH OUT")
+                ss *= 30
+            elif(closest_too_much_under_dt < 0):
+                Console.WriteLine("DEBUG: CALM DOWN")
+                ss /= 10
+            else:
+                pct_under_dt = 100 * closest_too_much_under_dt / (closest_too_much_under_dt + closest_too_much_over_dt)
+                Console.WriteLine("DEBUG: CONCENTRATE {0}", pct_under_dt)
+                if(current_brightness < ideal_brightness):
+                    ss += pct_under_dt * (closest_too_much_under_ss + closest_too_much_over_ss) / 100
+                else:
+                    ss -= (100-pct_under_dt) * (closest_too_much_under_ss + closest_too_much_over_ss) / 100
+            
+            if(count == max_try):
+                Console.WriteLine("DEBUG: ENOUGH")
+                break
+            
+            if(ss > 1000):
+                Console.WriteLine("DEBUG: JUST BELOW EXPLOSION")
+                ss = 1000
+                count = max_try - 1
+                
+            if(ss < 1):
+                Console.WriteLine("DEBUG: JUST ABOVE DEATH")
+                ss = 1
+                count = max_try - 1
+                
+        except Exception as inst:
+            Console.WriteLine("")
+            print("Unexpected error:", sys.exc_info()[0])    
+            print(type(inst))    # the exception instance
+            print(inst.args)     # arguments stored in .args
+            print(inst) 
+            break;
+            
+    closest_image.seek(0)
+    Console.Write("Accepted delta={0} ... ", closest_delta)
+    open("/Pictures/tests/{0}_g_{1:04d}.jpg".format(filename, int(ss)), 'wb').write(closest_image.read())
+    Console.WriteLine("saved")
+    
 filename = datetime.today().strftime("%Y-%m-%d_%H.%M.%S")
 
 Console.WriteLine("Taking pictures {0} !!!", filename)
@@ -172,6 +246,7 @@ try:
 #    take_simple_picture(camera, filename)
 #    take_corrected_picture(camera, filename)
 #    take_5_corrected_pictures(camera, filename)
+#    take_picture(camera, 1,filename)
 #    take_picture(camera, 5,filename)
 #    take_picture(camera, 10,filename)
 #    take_picture(camera, 50,filename)
@@ -180,7 +255,8 @@ try:
 #    take_picture(camera, 300,filename)
 #    take_picture(camera, 500,filename)
 #    take_picture(camera, 1000,filename)
-    take_best_picture(camera, filename)
+#    take_best_picture(camera, filename)
+    take_best_of_the_best_picture(camera, filename)
     pass
 finally:
     camera.close()

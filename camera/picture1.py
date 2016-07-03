@@ -33,50 +33,77 @@ def take_picture_stream(camera, nb_ss, filename):
     Console.Write("ss={0}, awb={1} ... ",camera.shutter_speed,camera.awb_gains)
     camera.capture(my_stream, 'jpeg')
     my_stream.seek(0)
+    Console.WriteLine("ok")
     return my_stream
     
 def take_best_picture(camera, filename):
-    Console.WriteLine("Taking the best possible picture !!!") 
-    min = 60
-    max = 80
-    ss = 1;
-    bright = 0.1;
-    bestbright = 0;
-    beststream = io.BytesIO()
-    count = 0;
-    while(ss > 0 and ss < 1000 and count < 15 and (bright < min or bright > max) ):
-        count+=1
+    Console.WriteLine("Taking the best of the best possible picture !!!") 
+    
+    ideal_brightness = 84
+    max_try = 20
+    accepted_delta = 2
+    
+    ss = 2
+    count = 0
+    delta = 9999.0
+    closest_too_much_under_ss = 1
+    closest_too_much_under_br = 0
+    closest_too_much_under_dt = -1.0
+    closest_too_much_over_ss = 1000
+    closest_too_much_over_br = 9999
+    closest_too_much_over_dt = -1.0
+    closest_image = io.BytesIO()
+    closest_delta = 9999.0
+    
+    while(ss > 0 and ss < 1001 and count < max_try and delta > accepted_delta):
+        count += 1
         try:
-            my_stream = take_picture_stream(camera, int(ss), filename)
-            bright = brightness(my_stream)
-            Console.WriteLine(" brighness={0} ... ok", bright)
-            short = 0
-            if (bestbright < min):
-                short = min - bestbright
-            if (bestbright > max):
-                short = bestbright - max
-            if(bright < min):
-                if(min - bright < short):
-                    bestbright = bright
-                    beststream = my_stream
-                ss *= 3
-                if(bright < 10):
-                    ss *= 10
-                if(ss > 1000):
-                    ss = 1000
-                    ount = 14
-            if(bright > max):
-                if(bright - max < short):
-                    bestbright = bright
-                    beststream = my_stream
-                ss *= 0.5
-                if(bright > 300):
-                    ss /= 10
-                if(ss < 1):
-                    ss = 0
-            if(bright >= min and bright <= max):
-                bestbright = bright
-                beststream = my_stream
+            current_stream = take_picture_stream(camera, int(ss), filename)
+            current_brightness = brightness(current_stream)
+            delta = abs(ideal_brightness - current_brightness)
+            Console.WriteLine("br={0} delta={1} accepted={2}... ok", current_brightness, delta, accepted_delta)
+            if(delta < accepted_delta):
+                closest_image = current_stream
+                closest_delta = delta
+                break
+                
+            if(ss == 1000):
+                break
+                
+            if(current_brightness < ideal_brightness):
+                if(closest_too_much_under_br < 0 or current_brightness > closest_too_much_under_br):
+                    closest_too_much_under_br = current_brightness
+                    closest_too_much_under_ss = ss
+                    closest_too_much_under_dt = delta
+                
+            if(current_brightness > ideal_brightness):
+                if(closest_too_much_over_br < 0 or current_brightness < closest_too_much_over_br):
+                    closest_too_much_over_br = current_brightness
+                    closest_too_much_over_ss = ss
+                    closest_too_much_over_dt = delta
+                    
+            if(closest_too_much_over_dt < 0):
+                ss *= 30
+            elif(closest_too_much_under_dt < 0):
+                ss /= 10
+            else:
+                pct_under_dt = 100 * closest_too_much_under_dt / (closest_too_much_under_dt + closest_too_much_over_dt)
+                if(current_brightness < ideal_brightness):
+                    ss += pct_under_dt * (closest_too_much_under_ss + closest_too_much_over_ss) / 100
+                else:
+                    ss -= (100-pct_under_dt) * (closest_too_much_under_ss + closest_too_much_over_ss) / 100
+            
+            if(count == max_try):
+                break
+            
+            if(ss > 1000):
+                ss = 1000
+                count = max_try - 1
+                
+            if(ss < 1):
+                ss = 1
+                count = max_try - 1
+                
         except Exception as inst:
             Console.WriteLine("")
             print("Unexpected error:", sys.exc_info()[0])    
@@ -84,11 +111,12 @@ def take_best_picture(camera, filename):
             print(inst.args)     # arguments stored in .args
             print(inst) 
             break;
-    beststream.seek(0)
-    Console.Write("Accepted brighness={0} ... let's write ... ", bestbright)
-    open("/Pictures/Flowers/{0}_{1:04d}.jpg".format(filename, int(ss)), 'wb').write(beststream.read())
-    Console.WriteLine("ok")
-    
+            
+    closest_image.seek(0)
+    Console.Write("Accepted delta={0} ... ", closest_delta)
+    open("/Pictures/Flowers/{0}_{1:04d}.jpg".format(filename, int(ss)), 'wb').write(closest_image.read())
+    Console.WriteLine("saved")
+        
 filename = datetime.today().strftime("%Y-%m-%d_%H.%M.%S")
 
 Console.WriteLine("Taking pictures {0} !!!", filename)
