@@ -117,3 +117,18 @@ pi@ralph:~$ raspistill -n -ss 3000000 -q 100 -o /Pictures/test21.jpg
 pi@ralph:~$ raspistill -n -ss 5000000 -q 100 -o /Pictures/test22.jpg
 pi@ralph:~$ raspistill -n -ss 10000000 -q 100 -o /Pictures/test23.jpg
 
+21. Get GIT
+> sudo apt-get install git -y
+> git config --global user.name "ericmas001"
+> git config --global user.name "ericmas001@gmail.com"
+> git config --global push.default matching
+
+22. Get pi-adventures
+> cd /Programmation
+> git clone https://github.com/Ericmas001/pi-adventures.git
+
+23. Setup crontab
+> crontab -e
+> */10 * * * * /Programmation/pi-adventures/camera/picture1.py
+Your mails from crontab are in /var/mail/pi
+http://www.cyberciti.biz/faq/crontab-every-10-min/
