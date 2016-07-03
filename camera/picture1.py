@@ -8,21 +8,17 @@ def startprint( str ):
    sys.stdout.write(str)
    sys.stdout.flush()
 
-filename = datetime.today().strftime("%Y-%m-%d_%H.%M.%S")
-print "Taking pictures " + filename + " !!!"
-startprint( "Taking setting 1 ... ")
-subprocess.call("raspistill -n -ss 1000000 -q 100 -o /Pictures/%s_01.jpg" % (filename), shell=True)
-print "ok"
-startprint( "Taking setting 2 ... ")
-subprocess.call("raspistill -n -ss 2000000 -q 100 -o /Pictures/%s_02.jpg" % (filename), shell=True)
-print "ok"
-startprint( "Taking setting 3 ... ")
-subprocess.call("raspistill -n -ss 3000000 -q 100 -o /Pictures/%s_03.jpg" % (filename), shell=True)
-print "ok"
-startprint( "Taking setting 5 ... ")
-subprocess.call("raspistill -n -ss 5000000 -q 100 -o /Pictures/%s_05.jpg" % (filename), shell=True)
-print "ok"
-startprint( "Taking setting 10 ... ")
-subprocess.call("raspistill -n -ss 10000000 -q 100 -o /Pictures/%s_10.jpg" % (filename), shell=True)
-print "ok"
+def take_picture( nb_ss, filename ):
+   startprint( "Taking setting {0} ... ".format(nb_ss))
+   subprocess.call("raspistill -n -ss {0}000000 -q 100 -o /Pictures/Flowers/{1}_{0:02d}.jpg".format(nb_ss, filename), shell=True)
+   print "ok"
 
+filename = datetime.today().strftime("%Y-%m-%d_%H.%M.%S")
+
+print "Taking pictures " + filename + " !!!"
+
+take_picture(1,filename)
+take_picture(2,filename)
+take_picture(3,filename)
+take_picture(5,filename)
+take_picture(10,filename)
