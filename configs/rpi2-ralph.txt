@@ -1,0 +1,119 @@
+1. Get latest minibian
+https://minibianpi.wordpress.com
+
+2. Flash it with Win32DiskImager
+http://sourceforge.net/projects/win32diskimager/files/latest/download
+
+3. Follow steps:
+ - Download and Install Minibian
+ - Expand SD Filesystem and Overclock (no overclock available)
+ - Update Raspberry Pi Firmware
+http://www.htpcguides.com/lightweight-raspbian-distro-minibian-initial-setup/
+
+3.1. Change local time
+ > dpkg-reconfigure tzdata
+
+4. Follow steps:
+ - Create the Pi User (pi)
+http://www.htpcguides.com/lightweight-raspbian-distro-minibian-initial-setup/
+
+5. Reboot as new user
+
+6. Setup sudoedit
+ALT+Cedille pour le ~
+https://github.com/Ericmas001/debian-helper/wiki/%5BSnippet%5D-Setup-sudoedit
+
+7. Change from DHCP to Static IP
+192.168.2.222
+https://github.com/Ericmas001/debian-helper/wiki/%5BSnippet%5D-Change-from-DHCP-to-Static-IP
+
+8. Log via SSH for the rest
+
+9. Change hostname
+ > sudo raspi-config
+Option 9: Advanced Options
+Option A2: Hostname
+ralph
+
+11. Make local dir to connect to NFS
+ > sudo mkdir /Programmation
+ > sudo mkdir /Pictures
+ > sudo mkdir /zeus
+ > sudo mkdir /zeus/Archives
+ > sudo mkdir /zeus/Downloads
+ > sudo mkdir /zeus/Videos
+ > sudo mkdir /zeus/Music
+ > sudo mkdir /zeus/Programmation
+
+12. Import folder via NFS from old zeus
+ > sudo apt-get install nfs-kernel-server nfs-common -y
+ > sudoedit /etc/fstab
+192.168.2.42:/Archives      /zeus/Archives           nfs rw,auto,nofail,retry=0,soft 0 0
+192.168.2.42:/Downloads     /zeus/Downloads          nfs rw,auto,nofail,retry=0,soft 0 0
+192.168.2.42:/Videos        /zeus/Videos             nfs rw,auto,nofail,retry=0,soft 0 0
+192.168.2.42:/Music         /zeus/Music              nfs rw,auto,nofail,retry=0,soft 0 0
+192.168.2.42:/Archives      /zeus/Programmation      nfs rw,auto,nofail,retry=0,soft 0 0
+ > sudo mount -a
+
+18. Make media folders
+sudo mkdir /media/Arbok
+
+17. Setup Samba
+https://github.com/Ericmas001/debian-helper/wiki/%5BProcedure%5D-Install-Samba-to-share-files-with-Windows
+
+[Pictures]
+path = /Pictures/
+browsable =yes
+writable = yes
+guest ok = yes
+read only = no
+
+[External Drives]
+path = /media/
+browsable =yes
+writable = yes
+guest ok = yes
+read only = no
+
+18. Change fstab to include new devices
+CAREFUL: will not reboot anymore if nothing is plugged in
+
+192.168.2.42:/Archives      /zeus/Archives           nfs rw,auto,nofail,retry=0,soft 0 0
+192.168.2.42:/Downloads     /zeus/Downloads          nfs rw,auto,nofail,retry=0,soft 0 0
+192.168.2.42:/Videos        /zeus/Videos             nfs rw,auto,nofail,retry=0,soft 0 0
+192.168.2.42:/Music         /zeus/Music              nfs rw,auto,nofail,retry=0,soft 0 0
+192.168.2.42:/Programmation /zeus/Programmation      nfs rw,auto,nofail,retry=0,soft 0 0
+
+################################################################################################
+
+# Mounting external usb 1.5TB EXT4 as /media/Arbok
+UUID=2e3bf3f0-7168-4e2f-be9d-254d993813fb /media/Arbok ext4 defaults 0 0
+
+/media/Arbok/Pictures                 /Pictures                      none rbind 0 0
+/zeus/Programmation                   /Programmation                 none rbind 0 0
+
+18.5 Export folders via NFS on old zeus
+ > sudoedit /etc/exports
+/Pictures           192.168.2.*(rw,sync,no_subtree_check)
+ > sudo /etc/init.d/nfs-kernel-server restart
+
+19. Setup camera
+https://mike632t.wordpress.com/2014/06/26/raspberry-pi-camera-setup/
+
+20. have fun
+raspistill -n -ss 1000000 -q 100 -o /Pictures/test11.jpg : better when full light
+raspistill -n -ss 10000000 -q 100 -o /Pictures/test11.jpg : better in low light
+
+pi@ralph:~$ raspistill -n -ss 1000000 -q 100 -o /Pictures/test14.jpg
+pi@ralph:~$ raspistill -n -ss 2000000 -q 100 -o /Pictures/test15.jpg
+pi@ralph:~$ raspistill -n -ss 3000000 -q 100 -o /Pictures/test15.jpg
+pi@ralph:~$ raspistill -n -ss 1000000 -q 100 -o /Pictures/test16.jpg
+pi@ralph:~$ raspistill -n -ss 2000000 -q 100 -o /Pictures/test17.jpg
+pi@ralph:~$ raspistill -n -ss 3000000 -q 100 -o /Pictures/test18.jpg
+pi@ralph:~$ raspistill -n -ss 1000000 -q 100 -o /Pictures/test19.jpg
+pi@ralph:~$ raspistill -n -ss 1000000 -q 100 -o /Pictures/test20.jpg
+pi@ralph:~$ raspistill -n -ss 2000000 -q 100 -o /Pictures/test20.jpg
+pi@ralph:~$ raspistill -n -ss 3000000 -q 100 -o /Pictures/test21.jpg
+pi@ralph:~$ raspistill -n -ss 5000000 -q 100 -o /Pictures/test22.jpg
+pi@ralph:~$ raspistill -n -ss 10000000 -q 100 -o /Pictures/test23.jpg
+

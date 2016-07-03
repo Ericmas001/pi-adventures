@@ -1,0 +1,191 @@
+1. Get latest minibian
+https://minibianpi.wordpress.com
+
+2. Flash it with Win32DiskImager
+http://sourceforge.net/projects/win32diskimager/files/latest/download
+
+3. Follow steps:
+ - Download and Install Minibian
+ - Expand SD Filesystem and Overclock (no overclock available)
+ - Update Raspberry Pi Firmware
+http://www.htpcguides.com/lightweight-raspbian-distro-minibian-initial-setup/
+
+3.1. Change local time
+ > dpkg-reconfigure tzdata
+
+4. Follow steps:
+ - Create the Pi User (zeus)
+http://www.htpcguides.com/lightweight-raspbian-distro-minibian-initial-setup/
+
+5. Reboot as new user
+
+6. Setup sudoedit
+ALT+Cedille pour le ~
+https://github.com/Ericmas001/debian-helper/wiki/%5BSnippet%5D-Setup-sudoedit
+
+7. Change from DHCP to Static IP
+192.168.2.84
+https://github.com/Ericmas001/debian-helper/wiki/%5BSnippet%5D-Change-from-DHCP-to-Static-IP
+
+8. Log via SSH for the rest
+
+9. Change hostname
+ > sudo raspi-config
+Option 9: Advanced Options
+Option A2: Hostname
+newzeus
+
+11. Make local dir to connect to NFS
+ > sudo mkdir /Archives
+ > sudo mkdir /Downloads
+ > sudo mkdir /Videos
+ > sudo mkdir /Music
+ > sudo mkdir /Programmation
+ > sudo mkdir -p /ralph/Pictures
+
+12. Import folder via NFS from old zeus
+ > sudo apt-get install nfs-kernel-server nfs-common
+ > sudoedit /etc/fstab
+192.168.2.42:/Archives      /Archives           nfs rw,auto,nofail,retry=0,soft 0 0
+192.168.2.42:/Downloads     /Downloads          nfs rw,auto,nofail,retry=0,soft 0 0
+192.168.2.42:/Videos        /Videos             nfs rw,auto,nofail,retry=0,soft 0 0
+192.168.2.42:/Music         /Music              nfs rw,auto,nofail,retry=0,soft 0 0
+# 192.168.2.222:/Pictures     /ralph/Pictures     nfs rw,auto,nofail,retry=0,soft 0 0
+ > sudo mount -a
+
+13. Install PMS on PI3
+http://www.htpcguides.com/install-plex-media-server-raspberry-pi-3-image/
+
+14. Follow initial setup
+http://192.168.2.84:32400/web/index.html
+ - TV Shows / Series *New*
+   - /Downloads/Complete/Series
+ - Movies / Movies *New*
+   - /Downloads/Complete/Movies
+ - Music / Music
+   - /Music
+ - TV Shows / Series *ToWatch*
+   - /Videos/Series/[ToWatch]
+ - Movies / Movies *ToWatch*
+   - /Videos/Movies/[ToWatch]
+ - TV Shows / Anime
+   - /Videos/Anime
+ - Movies / Movies [Action]
+   - /Videos/Movies/Action
+ - Movies / Movies [Comedy]
+   - /Videos/Movies/Comedy
+ - Movies / Movies [Drama]
+   - /Videos/Movies/Drama
+ - Movies / Movies [FR]
+   - /Videos/Movies/FR
+ - Movies / Movies [Kids]
+   - /Videos/Movies/Kids
+ - TV Shows / Series [Comedy]
+   - /Videos/Series/Comedy
+ - TV Shows / Series [FR]
+   - /Videos/Series/FR
+ - TV Shows / Series [Pilots]
+   - /Videos/Series/[Pilots]/Comedy
+   - /Videos/Series/[Pilots]/Reality
+   - /Videos/Series/[Pilots]/Thriller - Drama
+ - TV Shows / Series [Reality]
+   - /Videos/Series/Reality
+ - TV Shows / Series [Thriller / Drama]
+   - /Videos/Series/Thriller - Drama
+
+15. Have fun waiting for stuff to appear & marking things watched
+
+16. While it's getting stuff, setup transmission
+https://github.com/Ericmas001/debian-helper/wiki/%5BProcedure%5D-Install-transmission-daemon
+Compare with old one
+
+18. Make media folders
+sudo mkdir /media/Bulbasaur
+sudo mkdir /media/Charmander
+
+17. Setup Samba
+https://github.com/Ericmas001/debian-helper/wiki/%5BProcedure%5D-Install-Samba-to-share-files-with-Windows
+
+[Archives]
+path = /Archives/
+browsable =yes
+writable = yes
+guest ok = yes
+read only = no
+
+[Downloads]
+path = /Downloads/
+browsable =yes
+writable = yes
+guest ok = yes
+read only = no
+
+[Music]
+path = /Music/
+browsable =yes
+writable = yes
+guest ok = yes
+read only = no
+
+[Videos]
+path = /Videos/
+browsable =yes
+writable = yes
+guest ok = yes
+read only = no
+
+[Programmation]
+path = /Programmation/
+browsable =yes
+writable = yes
+guest ok = yes
+read only = no
+
+[External Drives]
+path = /media/
+browsable =yes
+writable = yes
+guest ok = yes
+read only = no
+
+18. Change NewZeus fstab to include new devices
+CAREFUL: will not reboot anymore if nothing is plugged in
+
+# 192.168.2.42:/Archives      /Archives           nfs rw,auto,soft 0 0
+# 192.168.2.42:/Downloads     /Downloads          nfs rw,auto,soft 0 0
+# 192.168.2.42:/Videos        /Videos             nfs rw,auto,soft 0 0
+# 192.168.2.42:/Music         /Music              nfs rw,auto,soft 0 0
+# 192.168.2.222:/Pictures     /ralph/Pictures     nfs rw,auto,nofail,retry=0,soft 0 0
+
+################################################################################################
+
+# Mounting external usb 4TB EXT4 as /media/Bulbasaur
+UUID=854c55a6-431e-4287-9ab1-6a465f1b3fec /media/Bulbasaur ext4 defaults 0 0
+
+# Mounting external usb 8TB EXT4 as /media/Charmander
+UUID=157fb9e9-8cae-4f5c-994e-1760ed06bcdc /media/Charmander ext4 defaults 0 0
+
+/media/Bulbasaur/archive                 /Archives                      none rbind 0 0
+/media/Bulbasaur/Programmation           /Programmation                 none rbind 0 0
+/media/Charmander/Videos                 /Videos                        none rbind 0 0
+/media/Charmander/Music                  /Music                         none rbind 0 0
+/media/Charmander/Downloads              /Downloads                     none rbind 0 0
+
+18.5 Export folders via NFS on old zeus
+ > sudoedit /etc/exports
+/Archives           192.168.2.*(rw,sync,no_subtree_check)
+/Downloads          192.168.2.*(rw,sync,no_subtree_check)
+/Videos             192.168.2.*(rw,sync,no_subtree_check)
+/Music              192.168.2.*(rw,sync,no_subtree_check)
+/Programmation      192.168.2.*(rw,sync,no_subtree_check)
+ > sudo /etc/init.d/nfs-kernel-server restart
+
+19. Comment fstab on older zeus to get it to reboot if needed
+
+20. Change host name of older zeus to oldzeus. DO NOT REBOOT
+20.5 Change host name of newer zeus to zeus. DO NOT REBOOT
+21. Change ip of old zeus to 84
+22. Change ip of new zeus to 42
+23. shutdown -P new zeus
+24. shutdown -P old zeus
+25. plug new zeus and boot
