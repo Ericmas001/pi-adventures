@@ -54,6 +54,7 @@ def take_best_picture(camera, filename):
     closest_too_much_over_dt = -1.0
     closest_image = io.BytesIO()
     closest_delta = 9999.0
+    closest_ss = 0
     
     while(ss > 0 and ss < 1001 and count < max_try and delta > accepted_delta):
         count += 1
@@ -61,13 +62,19 @@ def take_best_picture(camera, filename):
             current_stream = take_picture_stream(camera, int(ss), filename)
             current_brightness = brightness(current_stream)
             delta = abs(ideal_brightness - current_brightness)
-            Console.WriteLine("br={0} delta={1} accepted={2}... ok", current_brightness, delta, accepted_delta)
-            if(delta < accepted_delta):
+            Console.WriteLine("br={0} delta={1} accepted={2}", current_brightness, delta, accepted_delta)
+            if(delta < closest_delta):
                 closest_image = current_stream
                 closest_delta = delta
+                closest_ss = ss
+                
+            if(delta < accepted_delta):
                 break
                 
-            if(ss == 1000):
+            if(ss == 1000 and current_brightness < ideal_brightness):
+                break
+
+            if(ss == 1 and current_brightness > ideal_brightness):
                 break
                 
             if(current_brightness < ideal_brightness):
@@ -83,26 +90,25 @@ def take_best_picture(camera, filename):
                     closest_too_much_over_dt = delta
                     
             if(closest_too_much_over_dt < 0):
-                ss *= 30
+                ss *= 10
             elif(closest_too_much_under_dt < 0):
                 ss /= 10
             else:
-                pct_under_dt = 100 * closest_too_much_under_dt / (closest_too_much_under_dt + closest_too_much_over_dt)
                 if(current_brightness < ideal_brightness):
-                    ss += pct_under_dt * (closest_too_much_under_ss + closest_too_much_over_ss) / 100
+                    pct_under_dt = 100 * delta / (delta + closest_too_much_over_dt)
+                    ss += pct_under_dt * (ss + closest_too_much_over_ss) / 100
                 else:
-                    ss -= (100-pct_under_dt) * (closest_too_much_under_ss + closest_too_much_over_ss) / 100
+                    pct_under_dt = 100 * delta / (closest_too_much_under_dt + delta)
+                    ss -= pct_under_dt * (closest_too_much_under_ss + ss) / 100
             
             if(count == max_try):
                 break
             
             if(ss > 1000):
                 ss = 1000
-                count = max_try - 1
                 
             if(ss < 1):
                 ss = 1
-                count = max_try - 1
                 
         except Exception as inst:
             Console.WriteLine("")
