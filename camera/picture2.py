@@ -157,7 +157,10 @@ def take_best_of_the_best_picture(camera, filename):
     closest_image = io.BytesIO()
     closest_delta = 9999.0
     closest_ss = 0
-    
+    last_dt = -1
+    last_br = -1
+    last_ss = -1
+     
     while(ss > 0 and ss < 1001 and count < max_try and delta > accepted_delta):
         count += 1
         try:
@@ -200,20 +203,36 @@ def take_best_of_the_best_picture(camera, filename):
                     closest_too_much_over_dt = delta
                     
             if(closest_too_much_over_dt < 0):
+                last_ss = ss
                 Console.WriteLine("DEBUG: WATCH OUT")
                 ss *= 10
             elif(closest_too_much_under_dt < 0):
+                last_ss = ss
                 Console.WriteLine("DEBUG: CALM DOWN")
                 ss /= 10
             else:
-                if(current_brightness < ideal_brightness):
-                    pct_under_dt = 100 * delta / (delta + closest_too_much_over_dt)
-                    Console.WriteLine("DEBUG: CONCENTRATE {0}", pct_under_dt)
-                    ss += pct_under_dt * (ss + closest_too_much_over_ss) / 100
+                if(ss > last_ss and current_brightness < ideal_brightness):
+                    diff_ss = ss - last_ss
+                    last_ss = ss
+                    Console.WriteLine("DEBUG: NOT ENOUGH ++")
+                    ss += diff_ss
+                elif(ss < last_ss and current_brightness > ideal_brightness):
+                    diff_ss = last_ss - ss
+                    last_ss = ss
+                    Console.WriteLine("DEBUG: NOT ENOUGH --")
+                    ss -= diff_ss
+                elif(ss > last_ss):
+                    diff_ss = ss - last_ss
+                    last_ss = ss
+                    pct = 100 * delta / (delta + last_dt)
+                    Console.WriteLine("DEBUG: CONCENTRATE BACKWARD {0:.04f}%", pct)
+                    ss -= pct * (diff_ss) / 100
                 else:
-                    pct_under_dt = 100 * delta / (closest_too_much_under_dt + delta)
-                    Console.WriteLine("DEBUG: CONCENTRATE {0}", pct_under_dt)
-                    ss -= pct_under_dt * (closest_too_much_under_ss + ss) / 100
+                    diff_ss = last_ss - ss
+                    last_ss = ss
+                    pct = 100 * delta / (delta + last_dt)
+                    Console.WriteLine("DEBUG: CONCENTRATE FORWARD {0:.04f}%", pct)
+                    ss += pct * (diff_ss) / 100
             
             if(count == max_try):
                 Console.WriteLine("DEBUG: ENOUGH")
@@ -226,6 +245,8 @@ def take_best_of_the_best_picture(camera, filename):
             if(ss < 1):
                 Console.WriteLine("DEBUG: JUST ABOVE DEATH")
                 ss = 1
+            last_dt = delta
+            last_br = current_brightness
                 
         except Exception as inst:
             Console.WriteLine("")
