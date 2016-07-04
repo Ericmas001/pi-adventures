@@ -10,6 +10,8 @@ import Image
 import ImageStat
 import math
 
+basepath = "/Pictures/tests/{0}_g_{1:04d}.jpg"
+
 class Console:
     @staticmethod
     def Write(str, *args):
@@ -21,11 +23,16 @@ class Console:
         print str.format(*args)    
         sys.stdout.flush()
         
+    @staticmethod
+    def DebugLine(str, *args):
+        print "DEBUG: " + str.format(*args)    
+        sys.stdout.flush()
+        
 def take_simple_picture(camera, filename):
     Console.Write("Taking simple picture ... ") 
     camera.capture("/Pictures/tests/{0}_a_simple.jpg".format(filename))
     Console.WriteLine("ok")
-	
+    
 def take_corrected_picture(camera, filename):
     Console.Write("Taking corrected picture ... ") 
     camera.iso = 100
@@ -38,7 +45,7 @@ def take_corrected_picture(camera, filename):
     Console.Write("ss={0}, awb={1} ... ",camera.shutter_speed,camera.awb_gains)
     camera.capture("/Pictures/tests/{0}_b_corrected.jpg".format(filename))
     Console.WriteLine("ok")
-	
+    
 def take_5_corrected_pictures(camera, filename):
     Console.WriteLine("Taking 5 corrected picture ... ") 
     camera.iso = 100
@@ -141,15 +148,15 @@ def take_best_picture(camera, filename):
 def take_best_of_the_best_picture(camera, filename):
     Console.WriteLine("Taking the best of the best possible picture !!!") 
     
-    ideal_brightness = 84
+    ideal_brightness = 125
     max_try = 20
     accepted_delta = 2
     
     ss = 2
     count = 0
     delta = 9999.0
-	tested_under = False
-	tested_over = False
+    tested_under = False
+    tested_over = False
     closest_image = io.BytesIO()
     closest_delta = 9999.0
     closest_ss = 0
@@ -157,9 +164,9 @@ def take_best_of_the_best_picture(camera, filename):
     last_br = -1
     last_ss = -1
     
-	# TODO: last_last
-	# Creation classe pour {dt/br/ss}
-	
+    # TODO: last_last
+    # Creation classe pour {dt/br/ss}
+    
     while(ss > 0 and ss < 1001 and count < max_try and delta > accepted_delta):
         count += 1
         try:
@@ -168,74 +175,74 @@ def take_best_of_the_best_picture(camera, filename):
             delta = abs(ideal_brightness - current_brightness)
             Console.WriteLine("br={0} delta={1} accepted={2}", current_brightness, delta, accepted_delta)
             
-			if current_brightness < ideal_brightness :
-                Console.WriteLine("DEBUG: UNDER: CHECK")
-				tested_under = True
-			
-			if current_brightness > ideal_brightness :
-                Console.WriteLine("DEBUG: OVER: CHECK")
-				tested_over = True
-			
-			if delta < closest_delta :
-                Console.WriteLine("DEBUG: CLOSEST YET")
+            if current_brightness < ideal_brightness :
+                Console.DebugLine("UNDER: CHECK")
+                tested_under = True
+            
+            if current_brightness > ideal_brightness :
+                Console.DebugLine("OVER: CHECK")
+                tested_over = True
+            
+            if delta < closest_delta :
+                Console.DebugLine("CLOSEST YET")
                 closest_image = current_stream
                 closest_delta = delta
                 closest_ss = ss
                 
             if delta < accepted_delta :
-                Console.WriteLine("DEBUG: OK")
+                Console.DebugLine("OK")
                 break
                 
             if ss == 1000 and current_brightness < ideal_brightness :
-                Console.WriteLine("DEBUG: EXPLODE")
+                Console.DebugLine("EXPLODE")
                 break
 
             if ss == 1 and current_brightness > ideal_brightness :
-                Console.WriteLine("DEBUG: DIE")
+                Console.DebugLine("DIE")
                 break
                     
             if not tested_over :
                 last_ss = ss
-                Console.WriteLine("DEBUG: EXCESSIVE PUSH")
+                Console.DebugLine("EXCESSIVE PUSH")
                 ss *= 10
             elif not tested_under :
                 last_ss = ss
-                Console.WriteLine("DEBUG: EXCESSIVE CALM DOWN")
+                Console.DebugLine("EXCESSIVE CALM DOWN")
                 ss /= 10
             else :
                 if ss > last_ss and current_brightness < ideal_brightness :
                     diff_ss = ss - last_ss
                     last_ss = ss
-                    Console.WriteLine("DEBUG: NOT ENOUGH ++")
+                    Console.DebugLine("NOT ENOUGH ++")
                     ss += diff_ss
                 elif ss < last_ss and current_brightness > ideal_brightness :
                     diff_ss = last_ss - ss
                     last_ss = ss
-                    Console.WriteLine("DEBUG: NOT ENOUGH --")
+                    Console.DebugLine("NOT ENOUGH --")
                     ss -= diff_ss
                 elif ss > last_ss :
                     diff_ss = ss - last_ss
                     last_ss = ss
                     pct = 100 * delta / (delta + last_dt)
-                    Console.WriteLine("DEBUG: CONCENTRATE BACKWARD {0:.04f}%", pct)
+                    Console.DebugLine("CONCENTRATE BACKWARD {0:.04f}%", pct)
                     ss -= pct * (diff_ss) / 100
                 else :
                     diff_ss = last_ss - ss
                     last_ss = ss
                     pct = 100 * delta / (delta + last_dt)
-                    Console.WriteLine("DEBUG: CONCENTRATE FORWARD {0:.04f}%", pct)
+                    Console.DebugLine("CONCENTRATE FORWARD {0:.04f}%", pct)
                     ss += pct * (diff_ss) / 100
             
             if count == max_try :
-                Console.WriteLine("DEBUG: ENOUGH")
+                Console.DebugLine("ENOUGH")
                 break
             
             if ss > 1000 :
-                Console.WriteLine("DEBUG: JUST BELOW EXPLOSION")
+                Console.DebugLine("JUST BELOW EXPLOSION")
                 ss = 1000
                 
             if ss < 1 :
-                Console.WriteLine("DEBUG: JUST ABOVE DEATH")
+                Console.DebugLine("JUST ABOVE DEATH")
                 ss = 1
             last_dt = delta
             last_br = current_brightness
@@ -250,7 +257,7 @@ def take_best_of_the_best_picture(camera, filename):
             
     closest_image.seek(0)
     Console.Write("Accepted delta={0} ... ", closest_delta)
-    open("/Pictures/tests/{0}_g_{1:04d}.jpg".format(filename, int(ss)), 'wb').write(closest_image.read())
+    open(basepath.format(filename, int(ss)), 'wb').write(closest_image.read())
     Console.WriteLine("saved")
     
 filename = datetime.today().strftime("%Y-%m-%d_%H.%M.%S")
