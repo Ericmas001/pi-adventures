@@ -95,7 +95,7 @@ def take_picture_stream(camera, nb_ss, filename):
     my_stream = io.BytesIO()
     camera.framerate = float((float(101) - (float(nb_ss) / float(10))) / float(100))
     camera.shutter_speed = 10000 * nb_ss
-    Console.Write("ss={0}, awb={1} ... ",camera.shutter_speed,camera.awb_gains)
+    Console.Write("ss={0}, awb={1} ... ",camera.shutter_speed,camera.awb_mode)
     camera.capture(my_stream, 'jpeg')
     my_stream.seek(0)
     Console.WriteLine("ok")
@@ -262,7 +262,10 @@ try:
     sleep(2)
     camera.exposure_mode = 'off'
   #  g = camera.awb_gains
-    camera.awb_mode = 'flash'
+    awb = ['auto','sunlight', 'cloudy', 'shade','tungsten','fluorescent','incandescent','flash','horizon']
+    for x in awb :
+        camera.awb_mode = x
+        take_picture(camera, 200,filename + "_" + x)
   #  camera.awb_gains = g
 #    take_simple_picture(camera, filename)
 #    take_corrected_picture(camera, filename)
@@ -272,12 +275,11 @@ try:
 #    take_picture(camera, 10,filename)
 #    take_picture(camera, 50,filename)
 #    take_picture(camera, 100,filename)
-#    take_picture(camera, 200,filename)
-#    take_picture(camera, 300,filename)
+#    take_picture(camera, 350,filename)
 #    take_picture(camera, 500,filename)
 #    take_picture(camera, 1000,filename)
 #    take_best_picture(camera, filename)
-    take_best_of_the_best_picture(camera, filename)
+#    take_best_of_the_best_picture(camera, filename)
     pass
 finally:
     camera.close()
