@@ -12,6 +12,7 @@ import math
 import json
 import os
 import traceback
+from fractions import Fraction
 
 basepath = "/Pictures/tests/{0}_h_{1:04d}_{2:02d}_{3}.jpg"
 ideal_brightness = 125
@@ -393,9 +394,12 @@ try:
             last_photoshoot = PictureConfig(j["shutter_speed"], j["brightness"], j["delta"], j["filename"])
    
     camera.iso = 100
-    sleep(2)
     camera.exposure_mode = 'off'
-    camera.awb_mode = 'horizon'
+    camera.awb_mode = 'off'
+    camera.exposure_mode = 'off'
+    camera.drc_strength='off'
+    camera.awb_gains = (Fraction(753,557),Fraction(753,557))
+    sleep(2)
     take_best_picture_remembering(camera,last_photoshoot,filename)
   #  g = camera.awb_gains
   #  awb = ['auto','sunlight', 'cloudy', 'shade','tungsten','fluorescent','incandescent','flash','horizon']
