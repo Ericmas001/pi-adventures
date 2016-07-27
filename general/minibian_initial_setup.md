@@ -96,7 +96,8 @@ iface eth0 inet static
      broadcast 192.168.{NetworkId}.255
      gateway 192.168.{NetworkId}.1
 ```
- **9) Change hostname
+ **10) Change hostname**
+ 
   Replace `{Hostname}` by something that contains only the ASCII letters 'a' through 'z' (in a case-insensitive manner), the digits '0' through '9', and the hyphen ('-'). It cannot start with a digit or with a hyphen, and must not end with a hyphen.
 ```
  > sudo raspi-config
