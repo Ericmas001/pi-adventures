@@ -14,7 +14,7 @@ import os
 import traceback
 from fractions import Fraction
 
-basepath = "/Pictures/tests/{0}_h_{1:04d}_{2:02d}_{3}.jpg"
+basepath = "/Pictures/tests/{0}_h_{1:05d}_{2:02d}_{3}.jpg"
 ideal_brightness = 125
 max_try = 20
 accepted_delta = 2
@@ -85,8 +85,8 @@ def take_5_corrected_pictures(camera, filename):
         
 def take_picture(camera, nb_ss, filename):
     Console.Write("Taking setting {0} ... ", nb_ss) 
-    camera.framerate = float((float(101) - (float(nb_ss) / float(10))) / float(100))
-    camera.shutter_speed = 10000 * nb_ss
+    camera.framerate = float((float(101) - (float(nb_ss) / float(100))) / float(100))
+    camera.shutter_speed = 1000 * nb_ss
     Console.Write("ss={0}, awb={1} ... ",camera.shutter_speed,camera.awb_gains)
     camera.capture("/Pictures/tests/{0}_d_{1:04d}.jpg".format(filename, nb_ss))
     Console.WriteLine("ok")
@@ -105,8 +105,8 @@ def brightness5( im_file ):
 def take_picture_stream(camera, nb_ss, filename):
     Console.Write("Taking stream, setting #{0} ... ", nb_ss) 
     my_stream = io.BytesIO()
-    camera.framerate = float((float(101) - (float(nb_ss) / float(10))) / float(100))
-    camera.shutter_speed = 10000 * nb_ss
+    camera.framerate = float((float(101) - (float(nb_ss) / float(100))) / float(100))
+    camera.shutter_speed = 1000 * nb_ss
     Console.Write("ss={0}, awb={1} ... ",camera.shutter_speed,camera.awb_mode)
     camera.capture(my_stream, 'jpeg')
     my_stream.seek(0)
@@ -122,7 +122,7 @@ def take_best_picture(camera, filename):
     bestbright = 0;
     beststream = io.BytesIO()
     count = 0;
-    while(ss > 0 and ss < 1000 and count < 15 and (bright < min or bright > max) ):
+    while(ss > 0 and ss < 10000 and count < 15 and (bright < min or bright > max) ):
         count+=1
         try:
             my_stream = take_picture_stream(camera, int(ss), filename)
@@ -140,8 +140,8 @@ def take_best_picture(camera, filename):
                 ss *= 3
                 if(bright < 10):
                     ss *= 10
-                if(ss > 1000):
-                    ss = 1000
+                if(ss > 10000):
+                    ss = 10000
                     ount = 14
             if(bright > max):
                 if(bright - max < short):
@@ -180,7 +180,7 @@ def take_best_of_the_best_picture(camera, filename):
     tested_under = False
     tested_over = False
     
-    while(ss > 0 and ss < 1001 and count < max_try and (current is None or current.delta > accepted_delta)):
+    while(ss > 0 and ss < 10001 and count < max_try and (current is None or current.delta > accepted_delta)):
         count += 1
         try:
             current = TakenPicture(ss, take_picture_stream(camera, int(ss), filename))
@@ -202,7 +202,7 @@ def take_best_of_the_best_picture(camera, filename):
                 Console.DebugLine("OK ! FINISH")
                 break
                 
-            if ss == 1000 and current.brightness < ideal_brightness :
+            if ss == 10000 and current.brightness < ideal_brightness :
                 Console.DebugLine("EXPLODE")
                 break
 
@@ -240,9 +240,9 @@ def take_best_of_the_best_picture(camera, filename):
                 Console.DebugLine("ENOUGH")
                 break
             
-            if ss > 1000 :
+            if ss > 10000 :
                 Console.DebugLine("JUST BELOW EXPLOSION")
-                ss = 1000
+                ss = 10000
                 
             if ss < 1 :
                 Console.DebugLine("JUST ABOVE DEATH")
@@ -282,7 +282,7 @@ def take_best_picture_remembering(camera, last_photoshoot, filename):
     tested_over = False
     stopped_reason = "unknown"
     
-    while(ss > 0 and ss < 1001 and count < max_try and (current is None or current.delta > accepted_delta)):
+    while(ss > 0 and ss < 10001 and count < max_try and (current is None or current.delta > accepted_delta)):
         count += 1
         try:
             current = TakenPicture(ss, take_picture_stream(camera, int(ss), filename))
@@ -305,7 +305,7 @@ def take_best_picture_remembering(camera, last_photoshoot, filename):
                 stopped_reason = "accepted"
                 break
                 
-            if ss == 1000 and current.brightness < ideal_brightness :
+            if ss == 10000 and current.brightness < ideal_brightness :
                 Console.DebugLine("EXPLODE")
                 stopped_reason = "max_ss"
                 break
@@ -348,9 +348,9 @@ def take_best_picture_remembering(camera, last_photoshoot, filename):
                 stopped_reason = "max_tries"
                 break
             
-            if ss > 1000 :
+            if ss > 10000 :
                 Console.DebugLine("JUST BELOW EXPLOSION")
-                ss = 1000
+                ss = 10000
                 
             if ss < 1 :
                 Console.DebugLine("JUST ABOVE DEATH")

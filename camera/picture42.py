@@ -13,12 +13,20 @@ import json
 import os
 import traceback
 from fractions import Fraction
+import requests
 
-basepath = "/Pictures/TestChambre/{0}_{1:04d}_{2:02d}_{3}.jpg"
-ideal_brightness = 110
+washer_key = "Washer"
+dryer_key = "Dryer"
+misc_key = "GeneralConfig"
+
+path_full_photo = "/pics/{0}_{1:04d}_{2:02d}_{3}.jpg"
+path_washer = "/pics/washer_{0}.jpg"
+path_dryer = "/pics/dryer_{0}.jpg"
+ideal_brightness = 10
 max_try = 20
-accepted_delta = 2
-basepath_config = "/Pictures/TestChambre/last_config.json"
+accepted_delta = 1
+path_full_photo_config = "/pics/last_config.json"
+config = None
 
 
 class Console:
@@ -52,8 +60,11 @@ class PictureConfig:
     
 def brightness( im_file ):
    im = Image.open(im_file).convert('L')
-   stat = ImageStat.Stat(im)
-   return stat.mean[0]
+   mini_washer = im.crop((int(config[washer_key]["Left"]) + int(config[washer_key]["LeftStudy"]), int(config[washer_key]["Top"]) + int(config[washer_key]["TopStudy"]), int(config[washer_key]["Left"]) + int(config[washer_key]["RightStudy"]), int(config[washer_key]["Top"]) + int(config[washer_key]["BottomStudy"])))
+   mini_dryer = im.crop((int(config[dryer_key]["Left"]) + int(config[dryer_key]["LeftStudy"]), int(config[dryer_key]["Top"]) + int(config[dryer_key]["TopStudy"]), int(config[dryer_key]["Left"]) + int(config[dryer_key]["RightStudy"]), int(config[dryer_key]["Top"]) + int(config[dryer_key]["BottomStudy"])))
+   stat_washer = ImageStat.Stat(mini_washer)
+   stat_dryer = ImageStat.Stat(mini_dryer)
+   return max(stat_washer.mean[0],stat_dryer.mean[0])
     
 def take_picture_stream(camera, nb_ss, filename):
     Console.Write("Taking stream, setting #{0} ... ", nb_ss) 
@@ -170,58 +181,66 @@ def take_best_picture_remembering(camera, last_photoshoot, filename):
             traceback.print_exc()
             break;
             
-    closest.img.seek(0)
-    Console.Write("Finished because {0} ... ", stopped_reason)
-    full_image_path = basepath.format(filename, int(closest.shutter_speed), count, stopped_reason)
-    open(full_image_path, 'wb').write(closest.img.read())
-    Console.WriteLine("saved") 
-    config = open(basepath_config, "w")
-    config.write(json.dumps({'shutter_speed': closest.shutter_speed, 'brightness': closest.brightness, 'delta': closest.delta, 'filename': full_image_path, 'stopped_reason': stopped_reason}, sort_keys=True,indent=4, separators=(',', ': ')))
-    config.close()
-        
-filename = datetime.today().strftime("%Y-%m-%d_%H.%M.%S")
+    current.img.seek(0)
+    Console.WriteLine("Finished because {0} ", stopped_reason)
+    full_image_path = "NOT SAVED"
+#    full_image_path = path_full_photo.format(filename, int(current.shutter_speed), count, stopped_reason)
+#    open(full_image_path, 'wb').write(current.img.read())
+#    Console.WriteLine("saved")
+#    current.img.seek(0)
+    img = Image.open(current.img)
+    path_washer_final = path_washer.format(filename)
+    path_dryer_final = path_dryer.format(filename)
+    img.crop((int(config[washer_key]["Left"]), int(config[washer_key]["Top"]), int(config[washer_key]["Right"]), int(config[washer_key]["Bottom"]))).save(path_washer_final)
+    img.crop((int(config[dryer_key]["Left"]), int(config[dryer_key]["Top"]), int(config[dryer_key]["Right"]), int(config[dryer_key]["Bottom"]))).save(path_dryer_final)
+    url = 'http://washerdryerwebservice.azurewebsites.net/api/upload'
+    files = {"form_input_field_name1": open(path_washer_final, "rb"),"form_input_field_name2": open(path_dryer_final, "rb")}
+    requests.post(url, files=files)
+    cfg = open(path_full_photo_config, "w")
+    cfg.write(json.dumps({'shutter_speed': current.shutter_speed, 'brightness': current.brightness, 'delta': current.delta, 'filename': full_image_path, 'stopped_reason': stopped_reason}, sort_keys=True,indent=4, separators=(',', ': ')))
+    cfg.close()
+    os.remove(path_washer_final)
+    os.remove(path_dryer_final)
+	
+Console.WriteLine("===============================================================================")
+try:    
+	camera = PiCamera(resolution=(2592, 1944))    
+	try:
+		filename = datetime.today().strftime("%Y-%m-%d_%H.%M.%S")
+		Console.WriteLine("Taking pictures {0} !!!", filename)
 
-Console.WriteLine("Taking pictures {0} !!!", filename)
-camera = PiCamera(resolution=(2592, 1944))
-try:
-   
-    last_photoshoot = None
-    if os.path.isfile(basepath_config) :
-        with open(basepath_config, 'r') as content_file :
-            j = json.loads(content_file.read())
-            last_photoshoot = PictureConfig(j["shutter_speed"], j["brightness"], j["delta"], j["filename"])
-   
-   
-    camera.iso = 100
-    camera.exposure_mode = 'off'
-    camera.awb_mode = 'off'
-    camera.exposure_mode = 'off'
-    camera.drc_strength='off'
-    camera.awb_gains = (Fraction(753,557),Fraction(753,557))
-    sleep(2)
-  #  camera.exposure_mode = 'off'
-  #  g = camera.awb_gains
-  #  camera.awb_mode = 'horizon'
-  #  camera.awb_gains = g
-    
-   # sleep(2)
-    take_best_picture_remembering(camera,last_photoshoot,filename)
-  #  take_best_of_the_best_picture(camera, filename)
-  
-  #  awb = ['auto', 'sunlight', 'cloudy', 'shade','tungsten','fluorescent','incandescent','flash','horizon']
-  #  for x in awb :
-  #      camera.awb_mode = x
-  #      take_best_of_the_best_picture(camera, filename + "_" + x)
-    
-    pass
-    
-                
+		last_photoshoot = None
+		if os.path.isfile(path_full_photo_config) :
+			with open(path_full_photo_config, 'r') as content_file :
+				j = json.loads(content_file.read())
+				last_photoshoot = PictureConfig(j["shutter_speed"], j["brightness"], j["delta"], j["filename"])
+	   
+		url = 'http://washerdryerwebservice.azurewebsites.net/api/config'
+		config = requests.get(url).json()
+		
+		ideal_brightness = int(config[misc_key]["IdealBrightness"])
+		max_try = int(config[misc_key]["MaxTry"])
+		accepted_delta = float(config[misc_key]["AcceptedDelta"])
+		camera.iso = 100
+		camera.exposure_mode = 'off'
+		camera.awb_mode = 'off'
+		camera.exposure_mode = 'off'
+		camera.drc_strength='off'
+		camera.awb_gains = (Fraction(753,557),Fraction(753,557))
+		sleep(2)
+		take_best_picture_remembering(camera,last_photoshoot,filename)
+		
+		pass
+		
+					
+	except Exception as inst :
+		Console.WriteLine("")
+		print("Unexpected error:", sys.exc_info()[0])    
+		print(type(inst))    # the exception instance
+		print(inst.args)     # arguments stored in .args
+		print(inst) 
+		traceback.print_exc()
+	finally:
+		camera.close()
 except Exception as inst :
-    Console.WriteLine("")
-    print("Unexpected error:", sys.exc_info()[0])    
-    print(type(inst))    # the exception instance
-    print(inst.args)     # arguments stored in .args
-    print(inst) 
-    traceback.print_exc()
-finally:
-    camera.close()
+    Console.WriteLine(">>>>>   C A M E R A    I S    B U S Y   <<<<<")
