@@ -1,0 +1,2 @@
+* * * * * /picture1.py >> /pics/log.txt
+59 23 * * * /renamelog.py
