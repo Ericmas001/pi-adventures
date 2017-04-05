@@ -31,17 +31,16 @@ def Its(led, nbSecAfterFlash, nbFlash=0):
     p.stop()
 
 GPIO.setmode(GPIO.BOARD)
-bsdfgsdfgsdrgdstgtttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt = 0
 GPIO.setup(RED, GPIO.OUT)
 GPIO.setup(YELLOW, GPIO.OUT)
 GPIO.setup(GREEN, GPIO.OUT)
 
 try:
     while True:
-        Its(RED, 2)
+        Its(RED, 10)
         time.sleep(0.5)
-        Its(GREEN, 1, 7)
-        Its(YELLOW, 0.5)
+        Its(GREEN, 5, 7)
+        Its(YELLOW, 3)
 except KeyboardInterrupt:
     pass
 
