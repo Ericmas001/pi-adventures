@@ -222,6 +222,7 @@ try:
 		max_try = int(config[misc_key]["MaxTry"])
 		accepted_delta = float(config[misc_key]["AcceptedDelta"])
 		camera.iso = 100
+                camera.rotation = 270
 		camera.exposure_mode = 'off'
 		camera.awb_mode = 'off'
 		camera.exposure_mode = 'off'
