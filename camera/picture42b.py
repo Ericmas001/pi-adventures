@@ -184,10 +184,11 @@ def take_best_picture_remembering(camera, last_photoshoot, filename):
     current.img.seek(0)
     Console.WriteLine("Finished because {0} ", stopped_reason)
     full_image_path = "NOT SAVED"
-    full_image_path = path_full_photo.format(filename, int(current.shutter_speed), count, stopped_reason)
-    open(full_image_path, 'wb').write(current.img.read())
-    Console.WriteLine("saved")
-    current.img.seek(0)
+    if bool(config[misc_key]["SaveFullPic"]) :
+        full_image_path = path_full_photo.format(filename, int(current.shutter_speed), count, stopped_reason)
+        open(full_image_path, 'wb').write(current.img.read())
+        Console.WriteLine("saved")
+        current.img.seek(0)
     img = Image.open(current.img)
     path_washer_final = path_washer.format(filename)
     path_dryer_final = path_dryer.format(filename)
@@ -222,7 +223,7 @@ try:
 		max_try = int(config[misc_key]["MaxTry"])
 		accepted_delta = float(config[misc_key]["AcceptedDelta"])
 		camera.iso = 100
-        camera.rotation = 90
+		camera.rotation = 90
 		camera.exposure_mode = 'off'
 		camera.awb_mode = 'off'
 		camera.exposure_mode = 'off'
