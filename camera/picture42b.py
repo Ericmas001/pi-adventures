@@ -184,7 +184,7 @@ def take_best_picture_remembering(camera, last_photoshoot, filename):
     current.img.seek(0)
     Console.WriteLine("Finished because {0} ", stopped_reason)
     full_image_path = "NOT SAVED"
-    if bool(config[misc_key]["SaveFullPic"]) :
+    if eval(config[misc_key]["SaveFullPic"]) :
         full_image_path = path_full_photo.format(filename, int(current.shutter_speed), count, stopped_reason)
         open(full_image_path, 'wb').write(current.img.read())
         Console.WriteLine("saved")
