@@ -1,0 +1,3 @@
+pkill main.py
+echo '>>>>>>>>>>>>> KILLED'
+/pics/WasherDryerViewer/WasherDryer.Snappy/main.py >> /pics/log.txt &
