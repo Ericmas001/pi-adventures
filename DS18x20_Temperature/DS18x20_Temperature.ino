@@ -10,6 +10,7 @@
 // http://milesburton.com/Dallas_Temperature_Control_Library
 
 byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
+char jinni_server[] = "192.168.2.7";    // name address for Google (using DNS)
 char server[] = "192.168.2.7";    // name address for Google (using DNS)
 IPAddress ip(192, 168, 2, 223);
 EthernetClient client;
@@ -23,6 +24,30 @@ unsigned long last_update = 0;
 #define DHTPIN 7     // what pin we're connected to
 #define DHTTYPE DHT22   // DHT 22  (AM2302)
 DHT dht(DHTPIN, DHTTYPE); //// Initialize DHT sensor for normal 16mhz Arduino
+
+void note_temp_jinni(char sensor_name[], float value) {
+	// if you get a connection, report back via serial:
+    if (client.connect(jinni_server,42042)) {
+      Serial.println("connected");
+      // Make a HTTP request:
+      client.print("GET /hq/temperature/note/");
+      client.print(sensor_name);
+      client.print("/");
+      client.print(value);
+      client.println("/ HTTP/1.1");
+      client.println();
+      while (!client.available());
+      while (client.available()){
+        char c = client.read();
+        Serial.write(c);
+      }
+      client.stop();
+    } else {
+      // if you didn't get a connection to the jinni_server:
+      Serial.println("connection failed");
+    }
+}
+
 
 void setup(void) {
   Serial.begin(9600);
@@ -38,6 +63,7 @@ void setup(void) {
   delay(1000);
   Serial.println("connecting...");
 }
+
 
 void loop(void) {
 
@@ -177,72 +203,21 @@ void loop(void) {
   {
     last_celsius = celsius;
     Serial.println(">>>>>>UPDATING TEMP");
-    // if you get a connection, report back via serial:
-    if (client.connect(server,42042)) {
-      Serial.println("connected");
-      // Make a HTTP request:
-      client.print("GET /hq/temperature/note/ch.eric/");
-      client.print(celsius);
-      client.println("/ HTTP/1.1");
-      client.println();
-      while (!client.available());
-      while (client.available()){
-        char c = client.read();
-        Serial.write(c);
-      }
-      client.stop();
-    } else {
-      // if you didn't get a connection to the server:
-      Serial.println("connection failed");
-    }
+	note_temp_jinni("ch.eric",celsius);
   }
   
   if(abs(last_celsius2 - celsius2) > 0.15)
   {
     last_celsius2 = celsius2;
     Serial.println(">>>>>>UPDATING TEMP2");
-    // if you get a connection, report back via serial:
-    if (client.connect(server,42042)) {
-      Serial.println("connected");
-      // Make a HTTP request:
-      client.print("GET /hq/temperature/note/ch.eric2/");
-      client.print(celsius2);
-      client.println("/ HTTP/1.1");
-      client.println();
-      while (!client.available());
-      while (client.available()){
-        char c = client.read();
-        Serial.write(c);
-      }
-      client.stop();
-    } else {
-      // if you didn't get a connection to the server:
-      Serial.println("connection failed");
-    }
+	note_temp_jinni("ch.eric2",celsius2);
   }
   
   if(abs(last_humid2 - humid2) > 0.15)
   {
     last_humid2 = humid2;
     Serial.println(">>>>>>UPDATING HUMID");
-    // if you get a connection, report back via serial:
-    if (client.connect(server,42042)) {
-      Serial.println("connected");
-      // Make a HTTP request:
-      client.print("GET /hq/temperature/note/ch.eric.humid2/");
-      client.print(humid2);
-      client.println("/ HTTP/1.1");
-      client.println();
-      while (!client.available());
-      while (client.available()){
-        char c = client.read();
-        Serial.write(c);
-      }
-      client.stop();
-    } else {
-      // if you didn't get a connection to the server:
-      Serial.println("connection failed");
-    }
+	note_temp_jinni("ch.eric.humid2",humid2);
   }
   
   
