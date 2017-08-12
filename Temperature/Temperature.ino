@@ -221,7 +221,7 @@ void loop(void) {
     }
   }
   
-  if(abs(last_humid2 - humid2) > 0.15)
+  if(abs(last_humid2 - humid2) > 0.2)
   {
     last_humid2 = humid2;
     Serial.println(">>>>>>UPDATING HUMID");
