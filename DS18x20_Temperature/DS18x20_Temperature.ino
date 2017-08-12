@@ -1,7 +1,7 @@
 #include <OneWire.h>
 #include <SPI.h>
 #include <Ethernet.h>
-#include <DHT.h>;
+#include <DHT.h>
 // OneWire DS18S20, DS18B20, DS1822 Temperature Example
 //
 // http://www.pjrc.com/teensy/td_libs_OneWire.html
@@ -10,8 +10,8 @@
 // http://milesburton.com/Dallas_Temperature_Control_Library
 
 byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
-char jinni_server[] = "192.168.2.7";    // name address for Google (using DNS)
-char server[] = "192.168.2.7";    // name address for Google (using DNS)
+char jinni_server[] = "192.168.2.7";
+char house_hq_server[] = "ws.house-hq.com";
 IPAddress ip(192, 168, 2, 223);
 EthernetClient client;
 
@@ -26,9 +26,9 @@ unsigned long last_update = 0;
 DHT dht(DHTPIN, DHTTYPE); //// Initialize DHT sensor for normal 16mhz Arduino
 
 void note_temp_jinni(char sensor_name[], float value) {
-	// if you get a connection, report back via serial:
+  // if you get a connection, report back via serial:
     if (client.connect(jinni_server,42042)) {
-      Serial.println("connected");
+      Serial.println("jinni connected");
       // Make a HTTP request:
       client.print("GET /hq/temperature/note/");
       client.print(sensor_name);
@@ -44,7 +44,42 @@ void note_temp_jinni(char sensor_name[], float value) {
       client.stop();
     } else {
       // if you didn't get a connection to the jinni_server:
-      Serial.println("connection failed");
+      Serial.println("jinni connection failed");
+    }
+}
+
+void note_temp_azure(char sensor_name[], char api_key[], char sensor_type[], float value) {
+ // if you get a connection, report back via serial:
+    if (client.connect(house_hq_server,80)) {
+      Serial.println("house-hq connected");
+      // Make a HTTP request:
+      client.print("PUT /api/climate/note/");
+      client.print(sensor_name);
+      client.print("/");
+      client.print(api_key);
+      client.print("/");
+      client.print(sensor_type);
+      //client.print("/");
+      //client.print(value);
+      client.println(" HTTP/1.1");
+      client.println("Content-Type: application/json; charset=utf-8");
+      client.println("User-Agent: Arduino Uno, ericmas001@hotmail.com");
+      client.print("Host: ");
+      client.println(house_hq_server);
+      String s_value = String(value);
+      client.print("Content-Length: ");
+      client.println(s_value.length() + 1);
+      client.println();
+      client.println(s_value);
+      while (!client.available());
+      while (client.available()){
+        char c = client.read();
+        Serial.write(c);
+      }
+      client.stop();
+    } else {
+      // if you didn't get a connection to the jinni_server:
+      Serial.println("house-hq connection failed");
     }
 }
 
@@ -72,7 +107,7 @@ void loop(void) {
     last_update = millis();
     Serial.println(">>>>>>UPDATING ALIVENESS");
     // if you get a connection, report back via serial:
-    if (client.connect(server,42042)) {
+    if (client.connect(jinni_server,42042)) {
       Serial.println("connected");
       // Make a HTTP request:
       client.println("GET /hq/alive/uno HTTP/1.1");
@@ -203,21 +238,24 @@ void loop(void) {
   {
     last_celsius = celsius;
     Serial.println(">>>>>>UPDATING TEMP");
-	note_temp_jinni("ch.eric",celsius);
+	  note_temp_jinni("ch.eric",celsius);
+    note_temp_azure("eric.room.ds18", "FF3DCC1F", "Temperature", celsius);
   }
   
   if(abs(last_celsius2 - celsius2) > 0.15)
   {
     last_celsius2 = celsius2;
     Serial.println(">>>>>>UPDATING TEMP2");
-	note_temp_jinni("ch.eric2",celsius2);
+	  note_temp_jinni("ch.eric2",celsius2);
+    note_temp_azure("eric.room.dht", "218A9A54", "Temperature", celsius2);
   }
   
   if(abs(last_humid2 - humid2) > 0.15)
   {
     last_humid2 = humid2;
     Serial.println(">>>>>>UPDATING HUMID");
-	note_temp_jinni("ch.eric.humid2",humid2);
+	  note_temp_jinni("ch.eric.humid2",humid2);
+    note_temp_azure("eric.room.dht", "218A9A54", "Humidity", humid2);
   }
   
   
