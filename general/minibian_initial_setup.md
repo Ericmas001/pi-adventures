@@ -58,6 +58,35 @@ password: raspberry
  > apt-get dist-upgrade -y
  ==> Reboot
 ```
+**5.5) RPI ZERO W: wifi !!**
+```
+ > apt-get install firmware-realtek wpasupplicant iw crda wireless-regdb wireless-tools firmware-brcm80211 -y
+ ==> Reboot
+ > nano /etc/network/interface
+auto lo
+iface lo inet loopback
+
+auto eth0
+iface eth0 inet dhcp
+
+allow-hotplug wlan0
+iface wlan0 inet manual
+wpa-roam /etc/wpa_supplicant/wpa_supplicant.conf
+iface default inet static
+     address 192.168.2.99
+     network 192.168.2.0
+     netmask 255.255.255.0
+     broadcast 192.168.2.255
+     gateway 192.168.2.1
+     
+ > nano /etc/wpa_supplicant/wpa_supplicant.conf
+ network={
+ssid="Wifi Network Name"
+psk="Wifi password"
+}
+
+ ==> Reboot
+```
  **6) Change local time**
 ```
 dpkg-reconfigure tzdata
